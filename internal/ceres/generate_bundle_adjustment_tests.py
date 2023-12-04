@@ -248,14 +248,14 @@ if __name__ == '__main__':
   generated_files = []
   for linear_solver, sparse_backend, preconditioner in SOLVER_CONFIGS:
     for ordering in ORDERINGS:
-      for thread_config in THREAD_CONFIGS:
-        generated_files.append(
-            generate_bundle_test(linear_solver,
-                                 sparse_backend,
-                                 preconditioner,
-                                 ordering,
-                                 thread_config))
-
+      generated_files.extend(
+          generate_bundle_test(
+              linear_solver,
+              sparse_backend,
+              preconditioner,
+              ordering,
+              thread_config,
+          ) for thread_config in THREAD_CONFIGS)
   # Generate the CMakeLists.txt as well.
   with open('generated_bundle_adjustment_tests/CMakeLists.txt', 'w') as fd:
     fd.write(COPYRIGHT_HEADER.replace('//', '#').replace('http:#', 'http://'))

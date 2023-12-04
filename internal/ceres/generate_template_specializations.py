@@ -80,9 +80,7 @@ import os
 import glob
 
 def SuffixForSize(size):
-  if size == "Eigen::Dynamic":
-    return "d"
-  return str(size)
+  return "d" if size == "Eigen::Dynamic" else str(size)
 
 def SpecializationFilename(prefix, row_block_size, e_block_size, f_block_size):
   return "_".join([prefix] + map(SuffixForSize, (row_block_size,
@@ -92,16 +90,16 @@ def SpecializationFilename(prefix, row_block_size, e_block_size, f_block_size):
 def GenerateFactoryConditional(row_block_size, e_block_size, f_block_size):
   conditionals = []
   if (row_block_size != "Eigen::Dynamic"):
-    conditionals.append("(options.row_block_size == %s)" % row_block_size)
+    conditionals.append(f"(options.row_block_size == {row_block_size})")
   if (e_block_size != "Eigen::Dynamic"):
-    conditionals.append("(options.e_block_size == %s)" % e_block_size)
+    conditionals.append(f"(options.e_block_size == {e_block_size})")
   if (f_block_size != "Eigen::Dynamic"):
-    conditionals.append("(options.f_block_size == %s)" % f_block_size)
-  if (len(conditionals) == 0):
+    conditionals.append(f"(options.f_block_size == {f_block_size})")
+  if not conditionals:
     return "%s"
 
   if (len(conditionals) == 1):
-    return " if " + conditionals[0] + "{\n  %s\n }\n"
+    return f" if {conditionals[0]}" + "{\n  %s\n }\n"
 
   return " if (" + " &&\n     ".join(conditionals) + ") {\n  %s\n }\n"
 
@@ -112,28 +110,28 @@ def Specialize(name, data):
 
   # Specialization files
   for row_block_size, e_block_size, f_block_size in SPECIALIZATIONS:
-      output = SpecializationFilename("generated/" + name,
-                                      row_block_size,
-                                      e_block_size,
-                                      f_block_size) + ".cc"
+    output = (SpecializationFilename(f"generated/{name}", row_block_size,
+                                     e_block_size, f_block_size) + ".cc")
 
-      with open(output, "w") as f:
-        f.write(data["HEADER"])
-        f.write(data["SPECIALIZATION_FILE"] %
-                  (row_block_size, e_block_size, f_block_size))
+    with open(output, "w") as f:
+      f.write(data["HEADER"])
+      f.write(data["SPECIALIZATION_FILE"] %
+                (row_block_size, e_block_size, f_block_size))
 
   # Generate the _d_d_d specialization.
-  output = SpecializationFilename("generated/" + name,
-                                   "Eigen::Dynamic",
-                                   "Eigen::Dynamic",
-                                   "Eigen::Dynamic") + ".cc"
+  output = (SpecializationFilename(
+      f"generated/{name}",
+      "Eigen::Dynamic",
+      "Eigen::Dynamic",
+      "Eigen::Dynamic",
+  ) + ".cc")
   with open(output, "w") as f:
     f.write(data["HEADER"])
     f.write(data["DYNAMIC_FILE"] %
               ("Eigen::Dynamic", "Eigen::Dynamic", "Eigen::Dynamic"))
 
   # Factory
-  with open(name + ".cc", "w") as f:
+  with open(f"{name}.cc", "w") as f:
     f.write(data["HEADER"])
     f.write(data["FACTORY_FILE_HEADER"])
     for row_block_size, e_block_size, f_block_size in SPECIALIZATIONS:
